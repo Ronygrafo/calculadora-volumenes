@@ -329,6 +329,90 @@ input.input-error { border-color: var(--color-error); }
       renderList();
       renderResult();
     }
+
+    // ─── EVENTOS ──────────────────────────────────────────────────────────────
+    function validateForm(largo, ancho, alto) {
+      const errors = {};
+      if (!largo || isNaN(largo) || Number(largo) <= 0) errors.largo = 'Ingresa un valor mayor a 0';
+      if (!ancho  || isNaN(ancho)  || Number(ancho)  <= 0) errors.ancho  = 'Ingresa un valor mayor a 0';
+      if (!alto   || isNaN(alto)   || Number(alto)   <= 0) errors.alto   = 'Ingresa un valor mayor a 0';
+      return errors;
+    }
+
+    function showErrors(errors) {
+      ['largo', 'ancho', 'alto'].forEach(field => {
+        const input = document.getElementById(`item-${field}`);
+        const span  = document.getElementById(`error-${field}`);
+        if (errors[field]) {
+          input.classList.add('input-error');
+          span.textContent = errors[field];
+        } else {
+          input.classList.remove('input-error');
+          span.textContent = '';
+        }
+      });
+    }
+
+    function clearErrors() {
+      showErrors({});
+    }
+
+    function onAgregar() {
+      const nameInput  = document.getElementById('item-name');
+      const largoInput = document.getElementById('item-largo');
+      const anchoInput = document.getElementById('item-ancho');
+      const altoInput  = document.getElementById('item-alto');
+
+      const largoVal = largoInput.value.trim();
+      const anchoVal = anchoInput.value.trim();
+      const altoVal  = altoInput.value.trim();
+
+      const errors = validateForm(largoVal, anchoVal, altoVal);
+      showErrors(errors);
+      if (Object.keys(errors).length > 0) return;
+
+      itemCounter += 1;
+      const name = nameInput.value.trim() || `Item ${itemCounter}`;
+
+      const largo  = parseFloat(largoVal);
+      const ancho  = parseFloat(anchoVal);
+      const alto   = parseFloat(altoVal);
+      const volume = calcVolume(largo, ancho, alto);
+
+      items.push({ id: itemCounter, name, largo, ancho, alto, volume });
+
+      nameInput.value  = '';
+      largoInput.value = '';
+      anchoInput.value = '';
+      altoInput.value  = '';
+      clearErrors();
+
+      saveSession();
+      render();
+    }
+
+    function onEliminar(id) {
+      items = items.filter(it => it.id !== id);
+      saveSession();
+      render();
+    }
+
+    function onTableClick(e) {
+      const btn = e.target.closest('.btn-delete');
+      if (!btn) return;
+      const id = Number(btn.dataset.id);
+      onEliminar(id);
+    }
+
+    // ─── INIT ─────────────────────────────────────────────────────────────────
+    function init() {
+      loadSession();
+      render();
+      document.getElementById('btn-agregar').addEventListener('click', onAgregar);
+      document.getElementById('items-tbody').addEventListener('click', onTableClick);
+    }
+
+    init();
   </script>
 </body>
 </html>
