@@ -257,6 +257,24 @@ input.input-error { border-color: var(--color-error); }
       const unit = STORAGE_UNITS.find(u => totalM3 <= u.maxVolume);
       return unit ? unit.name : STORAGE_UNITS[STORAGE_UNITS.length - 1].name;
     }
+
+    // ─── PERSISTENCIA (sessionStorage) ────────────────────────────────────────
+    function saveSession() {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ items, itemCounter }));
+    }
+
+    function loadSession() {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        items = data.items || [];
+        itemCounter = data.itemCounter || 0;
+      } catch (_) {
+        items = [];
+        itemCounter = 0;
+      }
+    }
   </script>
 </body>
 </html>
