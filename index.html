@@ -275,6 +275,60 @@ input.input-error { border-color: var(--color-error); }
         itemCounter = 0;
       }
     }
+
+    // ─── RENDERIZADO ──────────────────────────────────────────────────────────
+    function renderList() {
+      const tbody    = document.getElementById('items-tbody');
+      const table    = document.getElementById('items-table');
+      const empty    = document.getElementById('empty-state');
+
+      if (items.length === 0) {
+        table.style.display = 'none';
+        empty.style.display = 'block';
+      } else {
+        empty.style.display = 'none';
+        table.style.display = 'table';
+        tbody.innerHTML = items.map(it => `
+          <tr>
+            <td>${escapeHtml(it.name)}</td>
+            <td>${it.largo} × ${it.ancho} × ${it.alto} cm</td>
+            <td>${it.volume.toFixed(4)} m³</td>
+            <td><button class="btn-delete" data-id="${it.id}" title="Eliminar">×</button></td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function renderResult() {
+      const section = document.getElementById('result-section');
+      const total   = document.getElementById('result-total');
+      const rec     = document.getElementById('result-recommendation');
+
+      if (items.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+
+      const totalM3 = calcTotal(items);
+      const recName = getRecommendation(totalM3);
+
+      section.style.display = 'flex';
+      total.textContent = `Volumen total: ${totalM3.toFixed(2)} m³`;
+      rec.textContent   = `Bodega recomendada: ${recName}`;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function render() {
+      renderList();
+      renderResult();
+    }
   </script>
 </body>
 </html>
