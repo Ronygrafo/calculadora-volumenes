@@ -1,0 +1,685 @@
+# Calculadora de Volúmenes — Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Construir un archivo `index.html` autocontenido que permita al usuario ingresar dimensiones de items en cm, calcular el volumen total en m³, y recibir una recomendación de tamaño de bodega; embebible en Wix via HTML Component.
+
+**Architecture:** Un único archivo HTML con CSS y JS inline, sin dependencias externas. El estado vive en un array en memoria, sincronizado con `sessionStorage` en cada mutación. El script se divide en secciones delimitadas: configuración del negocio → estado → lógica de cálculo → persistencia → renderizado → eventos → init.
+
+**Tech Stack:** HTML5, CSS3 (custom properties), JavaScript ES6 (vanilla), sessionStorage API.
+
+---
+
+## Mapa de archivos
+
+| Archivo | Responsabilidad |
+|---|---|
+| `index.html` | Todo: markup, estilos y lógica. Archivo único autocontenido. |
+
+---
+
+## Task 1: HTML Skeleton + Variables CSS
+
+**Files:**
+- Create: `index.html`
+
+- [ ] **Step 1: Crear el archivo con estructura HTML base**
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Volúmenes</title>
+  <style>
+    /* placeholder — se completa en step 2 */
+  </style>
+</head>
+<body>
+
+  <!-- ZONA 1: FORMULARIO -->
+  <section id="form-section">
+    <h2>¿Qué necesitas guardar?</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="item-name">Nombre del item (opcional)</label>
+        <input type="text" id="item-name" placeholder="Ej: Sofá" />
+      </div>
+      <div class="field">
+        <label for="item-largo">Largo (cm)</label>
+        <input type="number" id="item-largo" min="0.01" step="any" placeholder="0" />
+        <span class="field-error" id="error-largo"></span>
+      </div>
+      <div class="field">
+        <label for="item-ancho">Ancho (cm)</label>
+        <input type="number" id="item-ancho" min="0.01" step="any" placeholder="0" />
+        <span class="field-error" id="error-ancho"></span>
+      </div>
+      <div class="field">
+        <label for="item-alto">Alto (cm)</label>
+        <input type="number" id="item-alto" min="0.01" step="any" placeholder="0" />
+        <span class="field-error" id="error-alto"></span>
+      </div>
+    </div>
+    <button id="btn-agregar" type="button">+ Agregar item</button>
+  </section>
+
+  <!-- ZONA 2: LISTA -->
+  <section id="list-section">
+    <h2>Items agregados</h2>
+    <div id="empty-state">Agrega tu primer item para comenzar</div>
+    <table id="items-table" style="display:none">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Dimensiones (cm)</th>
+          <th>Volumen</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="items-tbody"></tbody>
+    </table>
+  </section>
+
+  <!-- ZONA 3: RESULTADO -->
+  <section id="result-section" style="display:none">
+    <div id="result-total"></div>
+    <div id="result-recommendation"></div>
+  </section>
+
+  <script>
+    /* placeholder — se completa en tasks siguientes */
+  </script>
+</body>
+</html>
+```
+
+- [ ] **Step 2: Agregar CSS completo dentro de `<style>`**
+
+Reemplaza el bloque `<style>` con:
+
+```css
+:root {
+  --color-accent:     #1a3c6e;
+  --color-accent-lt:  #e8eef6;
+  --color-bg:         #ffffff;
+  --color-surface:    #f5f6f8;
+  --color-border:     #dde1e8;
+  --color-text:       #1a1a2e;
+  --color-muted:      #6b7280;
+  --color-error:      #dc2626;
+  --color-row-alt:    #f9fafb;
+  --radius:           8px;
+  --font:             system-ui, -apple-system, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  color: var(--color-text);
+  background: var(--color-bg);
+  padding: 24px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--color-accent);
+}
+
+/* FORMULARIO */
+#form-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 480px) {
+  .form-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
+}
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+
+label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+input[type="text"],
+input[type="number"] {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-family: var(--font);
+  background: var(--color-bg);
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+input.input-error { border-color: var(--color-error); }
+
+.field-error {
+  font-size: 0.75rem;
+  color: var(--color-error);
+  min-height: 1em;
+}
+
+#btn-agregar {
+  padding: 11px 24px;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+#btn-agregar:hover { opacity: 0.88; }
+
+/* LISTA */
+#list-section {
+  margin-bottom: 24px;
+}
+
+#empty-state {
+  text-align: center;
+  color: var(--color-muted);
+  padding: 32px 16px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+}
+
+#items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+#items-table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-border);
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#items-table tbody tr:nth-child(even) { background: var(--color-row-alt); }
+
+#items-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.btn-delete:hover { color: var(--color-error); background: #fef2f2; }
+
+/* RESULTADO */
+#result-section {
+  background: var(--color-accent-lt);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#result-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+#result-recommendation {
+  font-size: 1rem;
+  color: var(--color-text);
+}
+```
+
+- [ ] **Step 3: Verificar en el browser**
+
+Abre `index.html` directamente en el browser (doble clic o `open index.html`).  
+Esperado:
+- Se ven las 3 zonas con estilos aplicados
+- Solo se muestra el estado vacío en la lista ("Agrega tu primer item...")
+- La zona de resultado NO es visible (tiene `display:none`)
+- El layout es responsive: en pantalla ancha, los 4 campos del form van en una fila
+
+- [ ] **Step 4: Commit**
+
+```bash
+git init
+git add index.html
+git commit -m "feat: HTML skeleton y estilos CSS de la calculadora"
+```
+
+---
+
+## Task 2: Constantes de negocio y lógica de cálculo
+
+**Files:**
+- Modify: `index.html` — bloque `<script>`
+
+- [ ] **Step 1: Reemplazar el bloque `<script>` placeholder con las constantes y funciones de cálculo**
+
+```js
+// ─── CONFIGURACIÓN DEL NEGOCIO ────────────────────────────────────────────
+const STORAGE_UNITS = [
+  { name: 'Bodega Pequeña', maxVolume: 3 },
+  { name: 'Bodega Mediana', maxVolume: 8 },
+  { name: 'Bodega Grande',  maxVolume: Infinity },
+];
+const SESSION_KEY = 'calculadora_items';
+
+// ─── ESTADO ───────────────────────────────────────────────────────────────
+let items = [];      // [{ id, name, largo, ancho, alto, volume }]
+let itemCounter = 0; // contador incremental, nunca retrocede
+
+// ─── LÓGICA DE CÁLCULO ────────────────────────────────────────────────────
+function calcVolume(largo, ancho, alto) {
+  return (largo * ancho * alto) / 1_000_000;
+}
+
+function calcTotal(itemList) {
+  return itemList.reduce((sum, it) => sum + it.volume, 0);
+}
+
+function getRecommendation(totalM3) {
+  const unit = STORAGE_UNITS.find(u => totalM3 <= u.maxVolume);
+  return unit ? unit.name : STORAGE_UNITS[STORAGE_UNITS.length - 1].name;
+}
+```
+
+- [ ] **Step 2: Verificar lógica en consola del browser**
+
+Abre `index.html` en el browser, abre DevTools → Console y ejecuta:
+
+```js
+calcVolume(100, 50, 80)   // esperado: 0.4
+calcTotal([{ volume: 0.4 }, { volume: 1.6 }])  // esperado: 2
+getRecommendation(2)      // esperado: "Bodega Pequeña"
+getRecommendation(5)      // esperado: "Bodega Mediana"
+getRecommendation(10)     // esperado: "Bodega Grande"
+getRecommendation(3)      // esperado: "Bodega Pequeña" (límite exacto)
+getRecommendation(8)      // esperado: "Bodega Mediana" (límite exacto)
+```
+
+Todos deben retornar el valor esperado.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: constantes de negocio y funciones de cálculo de volumen"
+```
+
+---
+
+## Task 3: Persistencia con sessionStorage
+
+**Files:**
+- Modify: `index.html` — bloque `<script>`, sección persistencia
+
+- [ ] **Step 1: Agregar las funciones de persistencia después de `getRecommendation`**
+
+```js
+// ─── PERSISTENCIA (sessionStorage) ────────────────────────────────────────
+function saveSession() {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ items, itemCounter }));
+}
+
+function loadSession() {
+  const raw = sessionStorage.getItem(SESSION_KEY);
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    items = data.items || [];
+    itemCounter = data.itemCounter || 0;
+  } catch (_) {
+    items = [];
+    itemCounter = 0;
+  }
+}
+```
+
+- [ ] **Step 2: Verificar en consola del browser**
+
+Recarga `index.html`. En DevTools → Console:
+
+```js
+// Simular guardado
+items = [{ id: 1, name: 'Sofá', largo: 200, ancho: 90, alto: 80, volume: 1.44 }];
+itemCounter = 1;
+saveSession();
+sessionStorage.getItem('calculadora_items'); 
+// esperado: string JSON con items y itemCounter
+
+// Simular carga
+items = [];
+itemCounter = 0;
+loadSession();
+console.log(items.length, itemCounter);
+// esperado: 1, 1
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: persistencia de items en sessionStorage"
+```
+
+---
+
+## Task 4: Funciones de renderizado
+
+**Files:**
+- Modify: `index.html` — bloque `<script>`, sección renderizado
+
+- [ ] **Step 1: Agregar las funciones de renderizado después de las de persistencia**
+
+```js
+// ─── RENDERIZADO ──────────────────────────────────────────────────────────
+function renderList() {
+  const tbody    = document.getElementById('items-tbody');
+  const table    = document.getElementById('items-table');
+  const empty    = document.getElementById('empty-state');
+
+  if (items.length === 0) {
+    table.style.display = 'none';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    table.style.display = 'table';
+    tbody.innerHTML = items.map(it => `
+      <tr>
+        <td>${escapeHtml(it.name)}</td>
+        <td>${it.largo} × ${it.ancho} × ${it.alto} cm</td>
+        <td>${it.volume.toFixed(4)} m³</td>
+        <td><button class="btn-delete" data-id="${it.id}" title="Eliminar">×</button></td>
+      </tr>
+    `).join('');
+  }
+}
+
+function renderResult() {
+  const section = document.getElementById('result-section');
+  const total   = document.getElementById('result-total');
+  const rec     = document.getElementById('result-recommendation');
+
+  if (items.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  const totalM3 = calcTotal(items);
+  const recName = getRecommendation(totalM3);
+
+  section.style.display = 'flex';
+  total.textContent = `Volumen total: ${totalM3.toFixed(2)} m³`;
+  rec.textContent   = `Bodega recomendada: ${recName}`;
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function render() {
+  renderList();
+  renderResult();
+}
+```
+
+- [ ] **Step 2: Verificar renderizado manual en consola del browser**
+
+Recarga `index.html`. En DevTools → Console:
+
+```js
+// Simular un item en estado
+items = [{ id: 1, name: 'Caja', largo: 60, ancho: 40, alto: 50, volume: 0.12 }];
+render();
+```
+
+Esperado:
+- La tabla aparece con 1 fila: "Caja | 60 × 40 × 50 cm | 0.1200 m³ | ×"
+- El estado vacío desaparece
+- La zona de resultado aparece con "Volumen total: 0.12 m³" y "Bodega recomendada: Bodega Pequeña"
+
+```js
+// Simular lista vacía
+items = [];
+render();
+```
+
+Esperado:
+- La tabla se oculta, vuelve el mensaje "Agrega tu primer item para comenzar"
+- La zona de resultado se oculta
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: funciones de renderizado de lista y resultado"
+```
+
+---
+
+## Task 5: Validación y eventos
+
+**Files:**
+- Modify: `index.html` — bloque `<script>`, secciones eventos e init
+
+- [ ] **Step 1: Agregar funciones de validación y manejadores de eventos**
+
+```js
+// ─── EVENTOS ──────────────────────────────────────────────────────────────
+function validateForm(largo, ancho, alto) {
+  const errors = {};
+  if (!largo || isNaN(largo) || Number(largo) <= 0) errors.largo = 'Ingresa un valor mayor a 0';
+  if (!ancho  || isNaN(ancho)  || Number(ancho)  <= 0) errors.ancho  = 'Ingresa un valor mayor a 0';
+  if (!alto   || isNaN(alto)   || Number(alto)   <= 0) errors.alto   = 'Ingresa un valor mayor a 0';
+  return errors;
+}
+
+function showErrors(errors) {
+  ['largo', 'ancho', 'alto'].forEach(field => {
+    const input = document.getElementById(`item-${field}`);
+    const span  = document.getElementById(`error-${field}`);
+    if (errors[field]) {
+      input.classList.add('input-error');
+      span.textContent = errors[field];
+    } else {
+      input.classList.remove('input-error');
+      span.textContent = '';
+    }
+  });
+}
+
+function clearErrors() {
+  showErrors({});
+}
+
+function onAgregar() {
+  const nameInput  = document.getElementById('item-name');
+  const largoInput = document.getElementById('item-largo');
+  const anchoInput = document.getElementById('item-ancho');
+  const altoInput  = document.getElementById('item-alto');
+
+  const largoVal = largoInput.value.trim();
+  const anchoVal = anchoInput.value.trim();
+  const altoVal  = altoInput.value.trim();
+
+  const errors = validateForm(largoVal, anchoVal, altoVal);
+  showErrors(errors);
+  if (Object.keys(errors).length > 0) return;
+
+  itemCounter += 1;
+  const name = nameInput.value.trim() || `Item ${itemCounter}`;
+
+  const largo  = parseFloat(largoVal);
+  const ancho  = parseFloat(anchoVal);
+  const alto   = parseFloat(altoVal);
+  const volume = calcVolume(largo, ancho, alto);
+
+  items.push({ id: itemCounter, name, largo, ancho, alto, volume });
+
+  nameInput.value  = '';
+  largoInput.value = '';
+  anchoInput.value = '';
+  altoInput.value  = '';
+  clearErrors();
+
+  saveSession();
+  render();
+}
+
+function onEliminar(id) {
+  items = items.filter(it => it.id !== id);
+  saveSession();
+  render();
+}
+
+function onTableClick(e) {
+  const btn = e.target.closest('.btn-delete');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  onEliminar(id);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+function init() {
+  loadSession();
+  render();
+  document.getElementById('btn-agregar').addEventListener('click', onAgregar);
+  document.getElementById('items-tbody').addEventListener('click', onTableClick);
+}
+
+init();
+```
+
+- [ ] **Step 2: Probar flujo completo en el browser**
+
+Recarga `index.html`.
+
+**Prueba 1 — Validación:**
+- Deja Largo, Ancho, Alto en blanco y presiona "Agregar item"
+- Esperado: 3 mensajes de error inline, sin agregar nada
+
+**Prueba 2 — Agregar sin nombre:**
+- Ingresa Largo=100, Ancho=80, Alto=60, nombre vacío → Agregar
+- Esperado: fila "Item 1 | 100 × 80 × 60 cm | 0.4800 m³"
+- Resultado: "Volumen total: 0.48 m³ | Bodega recomendada: Bodega Pequeña"
+
+**Prueba 3 — Agregar con nombre:**
+- Ingresa Largo=200, Ancho=90, Alto=100, nombre="Sofá" → Agregar
+- Esperado: fila "Sofá | 200 × 90 × 100 cm | 1.8000 m³"
+- Total: "Volumen total: 2.28 m³"
+
+**Prueba 4 — Eliminar:**
+- Presiona × en la fila "Item 1"
+- Esperado: la fila desaparece, total recalcula a "1.80 m³"
+
+**Prueba 5 — Persistencia:**
+- Agrega 1 item, recarga la página (F5 o Cmd+R)
+- Esperado: el item sigue en la lista
+
+**Prueba 6 — Persistencia al cerrar tab:**
+- Cierra el tab y vuelve a abrir `index.html`
+- Esperado: lista vacía (sessionStorage limpiado)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: validación de formulario, eventos agregar/eliminar e init"
+```
+
+---
+
+## Task 6: Verificación final y entrega
+
+**Files:**
+- Read: `index.html` (revisión de calidad antes de entregar)
+
+- [ ] **Step 1: Verificar que el archivo es autocontenido**
+
+```bash
+grep -c "<script src" index.html   # esperado: 0
+grep -c "<link rel" index.html     # esperado: 0
+grep -c "import " index.html       # esperado: 0
+```
+
+Todos deben retornar 0 — sin dependencias externas.
+
+- [ ] **Step 2: Verificar tamaño del archivo**
+
+```bash
+wc -c index.html
+```
+
+Esperado: menos de 20.000 bytes (típicamente ~8-12 KB). Un archivo muy grande indica que algo no cuadra.
+
+- [ ] **Step 3: Prueba de responsive**
+
+Abre `index.html` en el browser y usa DevTools → Toggle Device Toolbar (Cmd+Shift+M en Chrome). Prueba con:
+- iPhone SE (375px): los 4 campos del form deben apilarse verticalmente
+- iPad (768px): los 4 campos deben ir en una fila
+- Desktop (1280px): layout cómodo con margen a los lados
+
+- [ ] **Step 4: Commit final**
+
+```bash
+git add index.html
+git commit -m "feat: calculadora de volúmenes MVP lista para integración Wix"
+```
+
+- [ ] **Step 5: Instrucciones de integración Wix**
+
+Para embeber en Wix:
+1. En el editor Wix, agregar un elemento **"Embed a Widget" → "Embed HTML"**
+2. Hacer clic en **"Enter Code"**
+3. Copiar todo el contenido de `index.html` y pegarlo en el editor de código de Wix
+4. Ajustar la altura del bloque en Wix (recomendado: 700–900px para desktop) hasta que el contenido se vea completo sin scroll interno del iframe
+5. Publicar y verificar en el sitio real
