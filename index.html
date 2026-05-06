@@ -232,7 +232,31 @@ input.input-error { border-color: var(--color-error); }
   </section>
 
   <script>
-    /* placeholder — se completa en tasks siguientes */
+    // ─── CONFIGURACIÓN DEL NEGOCIO ────────────────────────────────────────────
+    const STORAGE_UNITS = [
+      { name: 'Bodega Pequeña', maxVolume: 3 },
+      { name: 'Bodega Mediana', maxVolume: 8 },
+      { name: 'Bodega Grande',  maxVolume: Infinity },
+    ];
+    const SESSION_KEY = 'calculadora_items';
+
+    // ─── ESTADO ───────────────────────────────────────────────────────────────
+    let items = [];      // [{ id, name, largo, ancho, alto, volume }]
+    let itemCounter = 0; // contador incremental, nunca retrocede
+
+    // ─── LÓGICA DE CÁLCULO ────────────────────────────────────────────────────
+    function calcVolume(largo, ancho, alto) {
+      return (largo * ancho * alto) / 1_000_000;
+    }
+
+    function calcTotal(itemList) {
+      return itemList.reduce((sum, it) => sum + it.volume, 0);
+    }
+
+    function getRecommendation(totalM3) {
+      const unit = STORAGE_UNITS.find(u => totalM3 <= u.maxVolume);
+      return unit ? unit.name : STORAGE_UNITS[STORAGE_UNITS.length - 1].name;
+    }
   </script>
 </body>
 </html>
