@@ -260,7 +260,9 @@ input.input-error { border-color: var(--color-error); }
 
     // ─── PERSISTENCIA (sessionStorage) ────────────────────────────────────────
     function saveSession() {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ items, itemCounter }));
+      try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ items, itemCounter }));
+      } catch (_) { /* storage unavailable — state lives only in memory */ }
     }
 
     function loadSession() {
@@ -333,9 +335,10 @@ input.input-error { border-color: var(--color-error); }
     // ─── EVENTOS ──────────────────────────────────────────────────────────────
     function validateForm(largo, ancho, alto) {
       const errors = {};
-      if (!largo || isNaN(largo) || Number(largo) <= 0) errors.largo = 'Ingresa un valor mayor a 0';
-      if (!ancho  || isNaN(ancho)  || Number(ancho)  <= 0) errors.ancho  = 'Ingresa un valor mayor a 0';
-      if (!alto   || isNaN(alto)   || Number(alto)   <= 0) errors.alto   = 'Ingresa un valor mayor a 0';
+      const ok = v => Number.isFinite(Number(v)) && Number(v) > 0;
+      if (!ok(largo)) errors.largo = 'Ingresa un valor mayor a 0';
+      if (!ok(ancho))  errors.ancho  = 'Ingresa un valor mayor a 0';
+      if (!ok(alto))   errors.alto   = 'Ingresa un valor mayor a 0';
       return errors;
     }
 
@@ -410,6 +413,7 @@ input.input-error { border-color: var(--color-error); }
       render();
       document.getElementById('btn-agregar').addEventListener('click', onAgregar);
       document.getElementById('items-tbody').addEventListener('click', onTableClick);
+      document.getElementById('form-section').addEventListener('keydown', e => { if (e.key === 'Enter') onAgregar(); });
     }
 
     init();
