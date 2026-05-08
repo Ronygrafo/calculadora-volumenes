@@ -47,17 +47,30 @@ h2 {
 }
 
 .form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   margin-bottom: 16px;
 }
 
-@media (min-width: 480px) {
-  .form-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+
+.dims-row {
+  display: flex;
+  gap: 12px;
 }
 
-.field { display: flex; flex-direction: column; gap: 4px; }
+.dim-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 479px) {
+  .dims-row { flex-wrap: wrap; }
+  .dim-field { flex: 1 1 calc(33% - 8px); min-width: 80px; }
+}
 
 label {
   font-size: 0.8rem;
@@ -66,7 +79,8 @@ label {
 }
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+select {
   padding: 10px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -77,12 +91,16 @@ input[type="number"] {
   transition: border-color 0.15s;
 }
 
-input:focus {
+select { cursor: pointer; }
+
+input:focus,
+select:focus {
   outline: none;
   border-color: var(--color-accent);
 }
 
-input.input-error { border-color: var(--color-error); }
+input.input-error,
+select.input-error { border-color: var(--color-error); }
 
 .field-error {
   font-size: 0.75rem;
@@ -177,6 +195,44 @@ input.input-error { border-color: var(--color-error); }
   font-size: 1rem;
   color: var(--color-text);
 }
+
+/* INFO BODEGAS */
+.bodegas-info {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.bodega-badge {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.bodega-badge strong {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* FOOTER */
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 16px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin-top: 24px;
+  line-height: 1.8;
+}
+
+.site-footer a { color: var(--color-accent); }
   </style>
 </head>
 <body>
@@ -186,23 +242,32 @@ input.input-error { border-color: var(--color-error); }
     <h2>¿Qué necesitas guardar?</h2>
     <div class="form-grid">
       <div class="field">
-        <label for="item-name">Nombre del item (opcional)</label>
-        <input type="text" id="item-name" placeholder="Ej: Sofá" />
+        <label for="item-preset">Artículo</label>
+        <select id="item-preset">
+          <option value="" disabled selected>— Selecciona un artículo —</option>
+        </select>
+        <span class="field-error" id="error-preset"></span>
       </div>
-      <div class="field">
-        <label for="item-largo">Largo (cm)</label>
-        <input type="number" id="item-largo" min="0.01" step="any" placeholder="0" />
-        <span class="field-error" id="error-largo"></span>
+      <div class="field" id="field-name" style="display:none">
+        <label for="item-name">Nombre del artículo</label>
+        <input type="text" id="item-name" placeholder="Ej: Caja de herramientas" />
       </div>
-      <div class="field">
-        <label for="item-ancho">Ancho (cm)</label>
-        <input type="number" id="item-ancho" min="0.01" step="any" placeholder="0" />
-        <span class="field-error" id="error-ancho"></span>
-      </div>
-      <div class="field">
-        <label for="item-alto">Alto (cm)</label>
-        <input type="number" id="item-alto" min="0.01" step="any" placeholder="0" />
-        <span class="field-error" id="error-alto"></span>
+      <div class="dims-row">
+        <div class="dim-field">
+          <label for="item-largo">Largo (cm)</label>
+          <input type="number" id="item-largo" min="0.01" step="any" placeholder="0" />
+          <span class="field-error" id="error-largo"></span>
+        </div>
+        <div class="dim-field">
+          <label for="item-ancho">Ancho (cm)</label>
+          <input type="number" id="item-ancho" min="0.01" step="any" placeholder="0" />
+          <span class="field-error" id="error-ancho"></span>
+        </div>
+        <div class="dim-field">
+          <label for="item-alto">Alto (cm)</label>
+          <input type="number" id="item-alto" min="0.01" step="any" placeholder="0" />
+          <span class="field-error" id="error-alto"></span>
+        </div>
       </div>
     </div>
     <button id="btn-agregar" type="button">+ Agregar item</button>
@@ -231,6 +296,21 @@ input.input-error { border-color: var(--color-error); }
     <div id="result-recommendation"></div>
   </section>
 
+  <!-- INFO BODEGAS -->
+  <div class="bodegas-info">
+    <span class="bodega-badge"><strong>Bodega Pequeña</strong> — hasta 3 m³</span>
+    <span class="bodega-badge">·</span>
+    <span class="bodega-badge"><strong>Bodega Mediana</strong> — hasta 8 m³</span>
+    <span class="bodega-badge">·</span>
+    <span class="bodega-badge"><strong>Bodega Grande</strong> — más de 8 m³</span>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <p>Desarrollado por Rony Romero · Todos los derechos reservados © 2026</p>
+    <p>Impulsado por <a href="https://www.astrolab.com.co/" target="_blank" rel="noopener">Astrolab</a></p>
+  </footer>
+
   <script>
     // ─── CONFIGURACIÓN DEL NEGOCIO ────────────────────────────────────────────
     const STORAGE_UNITS = [
@@ -238,6 +318,25 @@ input.input-error { border-color: var(--color-error); }
       { name: 'Bodega Mediana', maxVolume: 8 },
       { name: 'Bodega Grande',  maxVolume: Infinity },
     ];
+
+    const PREDEFINED_ITEMS = [
+      { name: 'TV 32" en caja',          largo: 75,  ancho: 15,  alto: 45  },
+      { name: 'TV 50" en caja',          largo: 115, ancho: 15,  alto: 70  },
+      { name: 'TV 65" en caja',          largo: 150, ancho: 18,  alto: 85  },
+      { name: 'Sofá 3 puestos',          largo: 200, ancho: 90,  alto: 85  },
+      { name: 'Cama matrimonial',        largo: 200, ancho: 160, alto: 40  },
+      { name: 'Armario/Closet',          largo: 120, ancho: 60,  alto: 200 },
+      { name: 'Mesa comedor 6 puestos',  largo: 180, ancho: 90,  alto: 75  },
+      { name: 'Escritorio de oficina',   largo: 120, ancho: 60,  alto: 75  },
+      { name: 'Refrigerador',            largo: 70,  ancho: 70,  alto: 170 },
+      { name: 'Lavadora automática',     largo: 65,  ancho: 65,  alto: 85  },
+      { name: 'Caja de cartón estándar', largo: 60,  ancho: 40,  alto: 40  },
+      { name: 'Colchón matrimonial',     largo: 190, ancho: 140, alto: 25  },
+      { name: 'Bicicleta',               largo: 180, ancho: 60,  alto: 100 },
+      { name: 'Silla de oficina',        largo: 65,  ancho: 65,  alto: 110 },
+      { name: 'Estantería metálica',     largo: 180, ancho: 45,  alto: 180 },
+    ];
+
     const SESSION_KEY = 'calculadora_items';
 
     // ─── ESTADO ───────────────────────────────────────────────────────────────
@@ -294,7 +393,7 @@ input.input-error { border-color: var(--color-error); }
           <tr>
             <td>${escapeHtml(it.name)}</td>
             <td>${it.largo} × ${it.ancho} × ${it.alto} cm</td>
-            <td>${it.volume.toFixed(4)} m³</td>
+            <td>${it.volume.toFixed(2)} m³</td>
             <td><button class="btn-delete" data-id="${it.id}" title="Eliminar">×</button></td>
           </tr>
         `).join('');
@@ -333,9 +432,10 @@ input.input-error { border-color: var(--color-error); }
     }
 
     // ─── EVENTOS ──────────────────────────────────────────────────────────────
-    function validateForm(largo, ancho, alto) {
+    function validateForm(preset, largo, ancho, alto) {
       const errors = {};
       const ok = v => Number.isFinite(Number(v)) && Number(v) > 0;
+      if (!preset) errors.preset = 'Selecciona un artículo';
       if (!ok(largo)) errors.largo = 'Ingresa un valor mayor a 0';
       if (!ok(ancho))  errors.ancho  = 'Ingresa un valor mayor a 0';
       if (!ok(alto))   errors.alto   = 'Ingresa un valor mayor a 0';
@@ -354,6 +454,45 @@ input.input-error { border-color: var(--color-error); }
           span.textContent = '';
         }
       });
+
+      const presetEl  = document.getElementById('item-preset');
+      const presetErr = document.getElementById('error-preset');
+      if (errors.preset) {
+        presetEl.classList.add('input-error');
+        presetErr.textContent = errors.preset;
+      } else {
+        presetEl.classList.remove('input-error');
+        presetErr.textContent = '';
+      }
+    }
+
+    function onPresetChange() {
+      const presetEl  = document.getElementById('item-preset');
+      const fieldName = document.getElementById('field-name');
+      const val = presetEl.value;
+
+      document.getElementById('error-preset').textContent = '';
+      presetEl.classList.remove('input-error');
+
+      if (val === '__otro__') {
+        fieldName.style.display = 'block';
+        document.getElementById('item-largo').value = '';
+        document.getElementById('item-ancho').value = '';
+        document.getElementById('item-alto').value  = '';
+      } else if (val === '') {
+        fieldName.style.display = 'none';
+        document.getElementById('item-largo').value = '';
+        document.getElementById('item-ancho').value = '';
+        document.getElementById('item-alto').value  = '';
+      } else {
+        fieldName.style.display = 'none';
+        const preset = PREDEFINED_ITEMS.find(p => p.name === val);
+        if (preset) {
+          document.getElementById('item-largo').value = preset.largo;
+          document.getElementById('item-ancho').value = preset.ancho;
+          document.getElementById('item-alto').value  = preset.alto;
+        }
+      }
     }
 
     function clearErrors() {
@@ -361,21 +500,25 @@ input.input-error { border-color: var(--color-error); }
     }
 
     function onAgregar() {
+      const presetEl   = document.getElementById('item-preset');
       const nameInput  = document.getElementById('item-name');
       const largoInput = document.getElementById('item-largo');
       const anchoInput = document.getElementById('item-ancho');
       const altoInput  = document.getElementById('item-alto');
 
-      const largoVal = largoInput.value.trim();
-      const anchoVal = anchoInput.value.trim();
-      const altoVal  = altoInput.value.trim();
+      const presetVal = presetEl.value;
+      const largoVal  = largoInput.value.trim();
+      const anchoVal  = anchoInput.value.trim();
+      const altoVal   = altoInput.value.trim();
 
-      const errors = validateForm(largoVal, anchoVal, altoVal);
+      const errors = validateForm(presetVal, largoVal, anchoVal, altoVal);
       showErrors(errors);
       if (Object.keys(errors).length > 0) return;
 
       itemCounter += 1;
-      const name = nameInput.value.trim() || `Item ${itemCounter}`;
+      const name = presetVal === '__otro__'
+        ? (nameInput.value.trim() || `Item ${itemCounter}`)
+        : presetVal;
 
       const largo  = parseFloat(largoVal);
       const ancho  = parseFloat(anchoVal);
@@ -384,10 +527,12 @@ input.input-error { border-color: var(--color-error); }
 
       items.push({ id: itemCounter, name, largo, ancho, alto, volume });
 
+      presetEl.value   = '';
       nameInput.value  = '';
       largoInput.value = '';
       anchoInput.value = '';
       altoInput.value  = '';
+      document.getElementById('field-name').style.display = 'none';
       clearErrors();
 
       saveSession();
@@ -408,9 +553,25 @@ input.input-error { border-color: var(--color-error); }
     }
 
     // ─── INIT ─────────────────────────────────────────────────────────────────
+    function populatePreset() {
+      const sel = document.getElementById('item-preset');
+      PREDEFINED_ITEMS.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.name;
+        opt.textContent = item.name;
+        sel.appendChild(opt);
+      });
+      const otro = document.createElement('option');
+      otro.value = '__otro__';
+      otro.textContent = 'Otro (ingresar manualmente)';
+      sel.appendChild(otro);
+    }
+
     function init() {
+      populatePreset();
       loadSession();
       render();
+      document.getElementById('item-preset').addEventListener('change', onPresetChange);
       document.getElementById('btn-agregar').addEventListener('click', onAgregar);
       document.getElementById('items-tbody').addEventListener('click', onTableClick);
       document.getElementById('form-section').addEventListener('keydown', e => { if (e.key === 'Enter') onAgregar(); });
